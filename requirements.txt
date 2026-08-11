@@ -13,15 +13,8 @@ tensorflow
 keras
 scikit-learn
 xgboost
-cuDF
-cuML
 huggingface_hub
 joblib
 requests
-collections
-time
-threading
-typing
-datetime
 reportlab
 psutil
