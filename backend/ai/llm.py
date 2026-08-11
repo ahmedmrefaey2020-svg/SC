@@ -18,7 +18,7 @@ TOKEN = os.getenv("HF_TOKEN")
 logger = logging.getLogger("sentinel.llm")
 
 CANDIDATE_MODELS = [
-    'meta-llama/Llama-3.3-70B-Instruct'
+    'Qwen/Qwen2.5-72B-Instruct',
 ]
 
 SYSTEM_PROMPT = (
