@@ -1,9 +1,9 @@
 import os
 import hashlib
 import logging
-import traceback
+import asyncio
 from pathlib import Path
-from huggingface_hub import InferenceClient
+from huggingface_hub import AsyncInferenceClient  # Async Client بدلاً من Sync
 from dotenv import load_dotenv
 from backend.ai.agent_cache import agent_cache
 
@@ -47,10 +47,6 @@ def _is_arabic(text: str) -> bool:
 
 
 def _generate_offline_security_response(user_message: str, history: list[dict] | None = None) -> str:
-    """
-    Generates intelligent cybersecurity responses offline when HF API is unavailable,
-    allowing the fallback logic to respond organically without hardcoded keyword routing.
-    """
     is_ar = _is_arabic(user_message)
 
     if is_ar:
@@ -70,13 +66,11 @@ def _generate_offline_security_response(user_message: str, history: list[dict] |
 
 
 async def get_ai_response(user_message: str, history: list[dict] | None = None) -> str:
-    """
-    Sends the user prompt and conversation history to Hugging Face model endpoints
-    with fallback model chain and offline fallback logic.
-    """
-    # Context-aware cache key using history length and user message hash
-    hist_ctx = str(len(history)) if history else "0"
-    cache_key = "chat_" + hashlib.md5(f"{hist_ctx}_{user_message.strip()}".encode("utf-8")).hexdigest()
+    # إصلاح التخزين المؤقت: تضمين محتوى الـ history المقتطع في الـ Hash
+    hist_str = "".join([f"{h.get('role')}:{h.get('content','')}" for h in (history[-8:] if history else [])])
+    cache_raw = f"{hist_str}_{user_message.strip()}"
+    cache_key = "chat_" + hashlib.md5(cache_raw.encode("utf-8")).hexdigest()
+    
     cached_val = agent_cache.get(cache_key)
     if cached_val:
         return cached_val
@@ -84,17 +78,18 @@ async def get_ai_response(user_message: str, history: list[dict] | None = None) 
     if TOKEN:
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         if history:
-            for h in history[-8:]:  # Truncate history to last 8 turns to keep tokens safe
+            for h in history[-8:]:
                 role = h.get("role", "user")
                 content = h.get("content", "")
                 if role in ("user", "assistant") and content:
                     messages.append({"role": role, "content": content[:1500]})
         messages.append({"role": "user", "content": user_message[:3000]})
 
+        client = AsyncInferenceClient(api_key=TOKEN)  # إنشاء العميل مرة واحدة
         for model_id in CANDIDATE_MODELS:
             try:
-                client = InferenceClient(api_key=TOKEN)
-                response = client.chat.completions.create(
+                # استخدام await لمنع إيقاف الـ Event Loop
+                response = await client.chat.completions.create(
                     model=model_id,
                     messages=messages,
                     max_tokens=1500,
@@ -109,16 +104,12 @@ async def get_ai_response(user_message: str, history: list[dict] | None = None) 
                 logger.warning("LLM call failed for model %s: %s", model_id, e)
                 continue
 
-    # Fallback to intelligent offline responder if HF endpoints fail or token missing
     offline_reply = _generate_offline_security_response(user_message, history)
     agent_cache.set(cache_key, offline_reply, ttl=60.0)
     return offline_reply
 
 
 async def get_vuln_scan_response(file_content: str, filename: str) -> str:
-    """
-    Generates vulnerability scan reports with code fixes while optimizing token limits and caching duplicate scans.
-    """
     truncated_content = file_content[:12000] if len(file_content) > 12000 else file_content
     cache_key = "scan_" + hashlib.md5(f"{filename}_{truncated_content}".encode("utf-8")).hexdigest()
     cached_report = agent_cache.get(cache_key)
@@ -137,10 +128,10 @@ async def get_vuln_scan_response(file_content: str, filename: str) -> str:
             {"role": "system", "content": VULN_SCANNER_SYSTEM_PROMPT},
             {"role": "user", "content": scan_prompt},
         ]
+        client = AsyncInferenceClient(api_key=TOKEN)
         for model_id in CANDIDATE_MODELS:
             try:
-                client = InferenceClient(api_key=TOKEN)
-                response = client.chat.completions.create(
+                response = await client.chat.completions.create(
                     model=model_id,
                     messages=messages,
                     max_tokens=2200,
@@ -155,14 +146,10 @@ async def get_vuln_scan_response(file_content: str, filename: str) -> str:
                 logger.warning("Vuln scan LLM call failed for model %s: %s", model_id, e)
                 continue
 
-    # Offline fallback: real static-pattern analysis of the ACTUAL uploaded content
-    # (not a canned/static report) — used only when the cloud LLM is unreachable.
     return _offline_static_scan(truncated_content, filename, cache_key)
 
 
-# Lightweight, deterministic static checks used ONLY as an offline fallback when the
-# LLM is unavailable. Findings are derived from the real content being scanned, so the
-# report reflects what's actually in the file rather than a fixed placeholder result.
+# إصلاح الشروط المنطقية للأوفلاين شيكس
 _OFFLINE_CHECKS = [
     {
         "severity": "Critical",
@@ -174,21 +161,22 @@ _OFFLINE_CHECKS = [
     {
         "severity": "Critical",
         "title": "OS Command Injection Risk",
-        "match": lambda c: ("os.system(" in c or "subprocess.call(" in c and "shell=True" in c or "shell=True" in c),
+        "match": lambda c: ("os.system(" in c) or ("subprocess." in c and "shell=True" in c),
         "issue": "Shell command execution with shell=True (or os.system) detected — vulnerable to command injection if arguments include user input.",
         "fix": "import subprocess\nsubprocess.run([cmd, *args], shell=False, check=True)",
     },
     {
         "severity": "High",
         "title": "Potential Hardcoded Secret / Credential",
-        "match": lambda c: any(tok in c.lower() for tok in ["password =", "password=", "api_key =", "api_key=", "secret =", "secret="]) and "getenv" not in c.lower() and "os.environ" not in c.lower(),
+        "match": lambda line: any(tok in line.lower() for tok in ["password =", "password=", "api_key =", "api_key=", "secret =", "secret="]) 
+                              and "getenv" not in line.lower() and "os.environ" not in line.lower(),
         "issue": "A password, API key, or secret appears to be assigned as a literal value rather than loaded from a secure source.",
         "fix": "import os\napi_key = os.getenv('API_KEY', '')",
     },
     {
         "severity": "High",
         "title": "SQL Query Built via String Concatenation/Formatting",
-        "match": lambda c: ("select " in c.lower() or "insert " in c.lower() or "update " in c.lower()) and ("%s" in c or "+ " in c or "f\"" in c or "f'" in c) and "execute(" in c.lower(),
+        "match": lambda c: any(q in c.lower() for q in ["select ", "insert ", "update "]) and ("%s" in c or "+ " in c or "f\"" in c or "f'" in c) and "execute(" in c.lower(),
         "issue": "SQL statements appear to be built via string interpolation/concatenation, which is vulnerable to SQL injection.",
         "fix": "cursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,))",
     },
@@ -202,7 +190,7 @@ _OFFLINE_CHECKS = [
     {
         "severity": "Medium",
         "title": "Debug Mode Enabled",
-        "match": lambda c: ("debug=true" in c.lower() or "debug = true" in c.lower()) and "flask" not in c.lower() or "app.run(debug=True)" in c,
+        "match": lambda c: ("debug=true" in c.lower() or "debug = true" in c.lower() or "app.run(debug=true)" in c.lower()),
         "issue": "Debug mode appears enabled, which can leak stack traces, source paths, and internal state to end users in production.",
         "fix": "app.run(debug=False)  # never enable debug mode in production",
     },
@@ -217,8 +205,16 @@ _OFFLINE_CHECKS = [
 
 
 def _offline_static_scan(content: str, filename: str, cache_key: str) -> str:
-    findings = [chk for chk in _OFFLINE_CHECKS if chk["match"](content)]
-    # Risk score derived from the ACTUAL findings, not a fixed number
+    # تعديل فحص الأسرار ليفحص سطر بسطر بدلاً من الملف كاملاً
+    findings = []
+    for chk in _OFFLINE_CHECKS:
+        if chk["title"] == "Potential Hardcoded Secret / Credential":
+            if any(chk["match"](line) for line in content.splitlines()):
+                findings.append(chk)
+        else:
+            if chk["match"](content):
+                findings.append(chk)
+
     severity_weight = {"Critical": 30, "High": 20, "Medium": 10, "Low": 5}
     computed_score = min(95, sum(severity_weight.get(f["severity"], 5) for f in findings))
     risk_label = (
@@ -258,5 +254,5 @@ def _offline_static_scan(content: str, filename: str, cache_key: str) -> str:
         )
 
     report = "\n".join(lines)
-    agent_cache.set(cache_key, report, ttl=120.0)  # short TTL — this is a degraded-mode result
+    agent_cache.set(cache_key, report, ttl=120.0)
     return report
