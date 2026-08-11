@@ -1,25 +1,27 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
-import os
+from slowapi.errors import RateLimitExceeded
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
+from backend.ai.agents import run_periodic_email_report_loop
+from backend.api import agent, dashboard, pages, scanner, security_ops
+from backend.api import advanced_features as advanced_features_router
+from backend.api import playbooks as playbooks_router
+from backend.api import settings as settings_router
 from backend.core.config import get_settings
 from backend.core.rate_limit import limiter
-from backend.services.ip_service import is_ip_blocked
 from backend.monitoring.prediction import start_monitor, stop_monitor
-from backend.ai.agents import run_periodic_email_report_loop
-from backend.api import dashboard, security_ops, scanner, agent
-from backend.api import settings as settings_router
-from backend.api import pages
-from backend.api import playbooks as playbooks_router
-from backend.api import advanced_features as advanced_features_router
+from backend.services.ip_service import is_ip_blocked
 
 _cfg = get_settings()
 
@@ -27,6 +29,7 @@ _cfg = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from backend.api.dashboard import global_traffic_broadcaster
+
     start_monitor()
     broadcaster_task = asyncio.create_task(global_traffic_broadcaster())
     email_report_task = asyncio.create_task(run_periodic_email_report_loop())
@@ -45,6 +48,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# 1. إجبار السيرفر على قراءة الهيدرز القادمة من Railway Reverse Proxy
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -58,8 +64,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+
 BASE_DIR = Path(__file__).resolve().parent
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+app.mount(
+    "/static",
+    StaticFiles(directory=os.path.join(BASE_DIR, "static")),
+    name="static",
+)
 
 app.include_router(dashboard.router)
 app.include_router(settings_router.router)
@@ -71,6 +82,16 @@ app.include_router(playbooks_router.router)
 app.include_router(advanced_features_router.router)
 
 _templates = Jinja2Templates(directory="templates")
+
+
+# 2. تحويل أي طلب يتولد داخل FastAPI إلى https بدلاً من http
+@app.middleware("http")
+async def force_https_scheme(request: Request, call_next):
+    # تحويل الـ scheme تلقائيًا إلى https لإصلاح مشكلة Mixed Content
+    if request.headers.get("x-forwarded-proto") == "https" or True:
+        request.scope["scheme"] = "https"
+    response = await call_next(request)
+    return response
 
 
 @app.middleware("http")
@@ -106,12 +127,23 @@ async def security_middleware(request: Request, call_next):
         if "text/html" in accept:
             from backend.db.database import SessionLocal
             from backend.db.models import BlockedIP
+
             db = SessionLocal()
             try:
-                row = db.query(BlockedIP).filter(BlockedIP.ip_address == client_ip).first()
-                blocked_at = row.blocked_at.strftime("%Y-%m-%d %H:%M:%S") if row and row.blocked_at else "N/A"
+                row = (
+                    db.query(BlockedIP)
+                    .filter(BlockedIP.ip_address == client_ip)
+                    .first()
+                )
+                blocked_at = (
+                    row.blocked_at.strftime("%Y-%m-%d %H:%M:%S")
+                    if row and row.blocked_at
+                    else "N/A"
+                )
                 reason = getattr(row, "reason", "MANUAL") if row else "MANUAL"
-                attack_type = getattr(row, "attack_type", "Unknown") if row else "Unknown"
+                attack_type = (
+                    getattr(row, "attack_type", "Unknown") if row else "Unknown"
+                )
             finally:
                 db.close()
             return _templates.TemplateResponse(
@@ -130,14 +162,15 @@ async def security_middleware(request: Request, call_next):
         return JSONResponse(
             status_code=403,
             content={
-                "detail": "Access denied. Your IP has been blocked by Sentinel IDS.",
+                "detail": (
+                    "Access denied. Your IP has been blocked by Sentinel IDS."
+                ),
                 "blocked": True,
                 "client_ip": client_ip,
                 "block_page_url": block_page_url,
                 "redirect_url": block_page_url,
             },
         )
-
 
     response = await call_next(request)
     for k, v in _SECURITY_HEADERS.items():
