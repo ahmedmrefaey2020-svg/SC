@@ -58,7 +58,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
-app.mount("/static", StaticFiles(directory="static"), name="static")
+BASE_DIR = Path(__file__).resolve().parent
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 app.include_router(dashboard.router)
 app.include_router(settings_router.router)
