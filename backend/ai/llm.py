@@ -14,11 +14,14 @@ if env_file.exists():
 else:
     load_dotenv()
 
-TOKEN = os.getenv("HF_TOKEN")
+TOKEN = (os.getenv("HF_TOKEN") or "").strip().strip('"\'')
 logger = logging.getLogger("sentinel.llm")
 
 CANDIDATE_MODELS = [
+    'meta-llama/Llama-3.3-70B-Instruct',
+    'Qwen/Qwen2.5-Coder-32B-Instruct',
     'Qwen/Qwen2.5-72B-Instruct',
+    'mistralai/Mistral-7B-Instruct-v0.3'
 ]
 
 SYSTEM_PROMPT = (
@@ -75,7 +78,9 @@ async def get_ai_response(user_message: str, history: list[dict] | None = None) 
     if cached_val:
         return cached_val
 
-    if TOKEN:
+    # Re-check TOKEN dynamically if env changed
+    token = TOKEN or (os.getenv("HF_TOKEN") or "").strip().strip('"\'')
+    if token:
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         if history:
             for h in history[-8:]:
@@ -85,10 +90,9 @@ async def get_ai_response(user_message: str, history: list[dict] | None = None) 
                     messages.append({"role": role, "content": content[:1500]})
         messages.append({"role": "user", "content": user_message[:3000]})
 
-        client = AsyncInferenceClient(api_key=TOKEN)  # إنشاء العميل مرة واحدة
+        client = AsyncInferenceClient(api_key=token, timeout=15.0)
         for model_id in CANDIDATE_MODELS:
             try:
-                # استخدام await لمنع إيقاف الـ Event Loop
                 response = await client.chat.completions.create(
                     model=model_id,
                     messages=messages,
@@ -105,7 +109,7 @@ async def get_ai_response(user_message: str, history: list[dict] | None = None) 
                 continue
 
     offline_reply = _generate_offline_security_response(user_message, history)
-    agent_cache.set(cache_key, offline_reply, ttl=60.0)
+    # Don't cache offline failures so subsequent requests retry immediately
     return offline_reply
 
 
