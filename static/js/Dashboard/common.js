@@ -80,7 +80,7 @@ const SentinelUI = (() => {
 
         if (isFallback) {
             badge.className = 'monitoring-status-badge mode-fallback';
-            badge.innerHTML = '<span class="badge-dot"></span> Agent Offline — Waiting for Site Telemetry';
+            badge.innerHTML = '<span class="badge-dot"></span> Telemetry Agent Offline — Waiting for Site Data';
             return;
         }
 
