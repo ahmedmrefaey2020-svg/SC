@@ -9,7 +9,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.templating import Jinja2Templates
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
-
+import os
 from backend.core.config import get_settings
 from backend.core.rate_limit import limiter
 from backend.services.ip_service import is_ip_blocked
