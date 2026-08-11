@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome | Sentinel IDS Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/index.css') }}">
+    <script src="{{ url_for('static', path='/js/security_guard.js') }}"></script>
+</head>
+<body>
+
+    <div class="portal-container">
+        
+        <header>
+            <div class="logo-badge">
+                <div class="logo-dot"></div>
+                Sentinel Predictive IDS
+            </div>
+            <h1>Select Workspace</h1>
+            <p class="subtitle">Navigate to the operational dashboard, explore the research evaluation environment, or download the desktop client.</p>
+            
+            <div class="desktop-download-wrap" style="margin-top: 20px;">
+                <a href="/api/download-desktop-app" class="btn-desktop-app" title="Download Nativefier Desktop App">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                   Download desktop application
+                </a>
+            </div>
+        </header>
+
+        <div class="paths-grid">
+            
+            <a href="{{ url_for('site_vulnerabilities') }}" class="path-card dashboard">
+                <div class="icon-wrapper">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                </div>
+                <h2 class="card-title">System Dashboard</h2>
+                <p class="card-desc">Access the live client environment and configure system settings.</p>
+                <div class="card-action">
+                    Launch Dashboard
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </div>
+            </a>
+
+            <a href="{{ url_for('vulnerability_scanner') }}" class="path-card research">
+                <div class="icon-wrapper">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                    </svg>
+                </div>
+                <h2 class="card-title">Vulnerability Scanner</h2>
+                <p class="card-desc">Scan your code for potential vulnerabilities and security weaknesses.</p>
+                <div class="card-action">
+                    Run Scan
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </div>
+            </a>
+
+            <a href="{{ url_for('ai') }}" class="path-card paper">
+                <div class="icon-wrapper">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </div>
+                <h2 class="card-title">LLM Engine</h2>
+                <p class="card-desc">Explore the capabilities of our Language Model.</p>
+                <div class="card-action">
+                    Launch LLM Engine
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </div>
+            </a>
+
+        </div>
+
+        <footer>
+            &copy; 2026 Sentinel Predictive IDS Project. Designed for UGRF.
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', path='/js/Dashboard/common.js') }}"></script>
+</body>
+</html>

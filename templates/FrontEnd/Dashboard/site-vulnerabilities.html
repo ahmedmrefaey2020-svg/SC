@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Vulnerabilities Audit | Sentinel IDS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/Dashboard/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/Dashboard/vulnerability-scanner.css') }}">
+    <script src="{{ url_for('static', path='/js/security_guard.js') }}"></script>
+</head>
+<body>
+    <aside>
+        <div class="logo">
+            <div class="logo-dot"></div>
+            Cyber Agents
+        </div>
+        <nav>
+            <a href="{{ url_for('site_vulnerabilities') }}" class="nav-link active">Site Vulnerabilities</a>
+            <a href="{{ url_for('vulnerability_scanner') }}" class="nav-link">Vulnerability Scanner</a>
+            <a href="{{ url_for('ai') }}" class="nav-link">LLM Engine</a>
+            <a href="{{ url_for('settings') }}" class="nav-link">Settings</a>
+        </nav>
+    </aside>
+
+    <main>
+        <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <div class="scanner-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    SiteSecurityAuditAgent
+                </div>
+                <h1>Website & Linked Site Vulnerabilities</h1>
+                <p class="header-desc">AI-powered continuous security auditing of your platform codebase and linked external applications.</p>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-scan" onclick="runInternalAudit()" style="width: auto; padding: 10px 18px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    Audit Internal Site Codebase
+                </button>
+                <button class="btn-scan" onclick="runLinkedSiteAudit()" style="width: auto; padding: 10px 18px; background: #6366f1;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    Audit Linked External Site
+                </button>
+            </div>
+        </header>
+
+        <div style="margin-top: 24px;">
+            <div class="report-container" id="siteAuditContainer" style="display: block;">
+                <div class="report-header">
+                    <div>
+                        <div class="report-name" id="auditTitle">Internal Codebase Security Audit</div>
+                        <div class="report-subtitle" id="auditSubtitle">SiteSecurityAuditAgent — Automated Vulnerability Assessment & Step-by-Step Remediation</div>
+                    </div>
+                    <div class="report-actions">
+                        <div class="email-status" id="auditEmailStatus" style="display:none"></div>
+                    </div>
+                </div>
+
+                <div class="severity-row" id="auditSeverityRow"></div>
+
+                <div id="auditList" style="margin-top: 20px; display: flex; flex-direction: column; gap: 16px; color:black"></div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="{{ url_for('static', path='/js/Dashboard/common.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/Dashboard/site-vulnerabilities.js') }}"></script>
+</body>
+</html>

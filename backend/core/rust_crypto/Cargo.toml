@@ -1,0 +1,15 @@
+[package]
+name = "sentinel_crypto"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "sentinel_crypto"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+aes-gcm = "0.10"
+chacha20poly1305 = "0.10"
+base64 = "0.21"
+hex = "0.4"
+rand = "0.8"

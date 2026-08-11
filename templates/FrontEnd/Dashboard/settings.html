@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Predictive IDS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/Dashboard/settings.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/Dashboard/dashboard.css') }}">
+    <script src="{{ url_for('static', path='/js/security_guard.js') }}"></script>
+</head>
+<body>
+
+    <aside>
+        <div class="logo">
+            <div class="logo-dot"></div>
+            Cyber Agents
+        </div>
+        <nav>
+            <a href="{{ url_for('site_vulnerabilities') }}" class="nav-link">Site Vulnerabilities</a>
+            <a href="{{ url_for('vulnerability_scanner') }}" class="nav-link">Vulnerability Scanner</a>
+            <a href="{{ url_for('ai') }}" class="nav-link">LLM Engine</a>
+            <a href="{{ url_for('settings') }}" class="nav-link active">Settings</a>
+        </nav>
+    </aside>
+
+    <main>
+        <header>
+            <h1>System Settings</h1>
+            <p class="header-desc">Manage your account, notification preferences, and model configuration.</p>
+        </header>
+
+        <div class="settings-container">
+            
+            <div class="settings-section">
+                <div class="section-header">
+                    <h2 class="section-title">General Information</h2>
+                    <p class="section-subtitle">Your personal account and organization details.</p>
+                </div>
+                <div class="form-group">
+                    <label>Organization Name</label>
+                    <input type="text" value="{{user}}" id="orgName">
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Admin Email Address</label>
+                        <input type="email" value="admin@acmecorp.com" id="adminEmail">
+                    </div>
+                    <div class="form-group">
+                        <label>Timezone</label>
+                        <select id="timezone">
+                            <option value="UTC">UTC (Coordinated Universal Time)</option>
+                            <option value="EST" selected>EST (Eastern Standard Time)</option>
+                            <option value="EET">EET (Eastern European Time)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="section-header">
+                    <h2 class="section-title">Alert & Notification Preferences</h2>
+                    <p class="section-subtitle">Control how and when you receive predictive threat alerts.</p>
+                </div>
+                
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4>Push Notifications (Dashboard)</h4>
+                        <p>Receive real-time alerts in the browser when active.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="pushToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-row" style="border-top: 1px solid var(--border-color);">
+                    <div class="toggle-info">
+                        <h4>Email Alerts & Periodic Reports</h4>
+                        <p>Send automatic email reports and critical alerts to the admin email address.</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="emailToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="form-group" style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                    <label for="reportInterval">Email Report Interval (Minutes)</label>
+                    <input type="number" id="reportInterval" min="1" max="1440" value="30" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.95rem; background-color: rgba(255, 255, 255, 0.04); color: var(--text-primary);">
+                    <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 6px;">The system automatically dispatches executive multi-agent threat reports every time the specified number of minutes elapses.</p>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="section-header">
+                    <h2 class="section-title">SMTP Email Gateway Credentials</h2>
+                    <p class="section-subtitle">Configure outbound mail server parameters to enable executive email dispatch.</p>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>SMTP Host Server</label>
+                        <input type="text" id="smtpServer" placeholder="smtp.gmail.com or mail.yourdomain.com">
+                    </div>
+                    <div class="form-group">
+                        <label>SMTP Port</label>
+                        <input type="number" id="smtpPort" value="587" placeholder="587 / 465 / 25" min="1" max="20000" value="587" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border-color);">
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>SMTP Username</label>
+                        <input type="text" id="smtpUser" placeholder="alerts@yourdomain.com">
+                    </div>
+                    <div class="form-group">
+                        <label>SMTP Password</label>
+                        <input type="password" id="smtpPass" placeholder="••••••••••••">
+                    </div>
+                </div>
+                <div class="actions-bar actions-start" style="margin-top: 12px;">
+                    <button type="button" class="btn btn-outline" id="btnTestEmail" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Test SMTP Email Delivery
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="section-header">
+                    <h2 class="section-title">Linked External Site Integration</h2>
+                    <p class="section-subtitle">Link an external website URL and API Token to allow Sentinel SiteSecurityAuditAgent to scan remote endpoints.</p>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Linked External Site URL</label>
+                        <input type="url" id="linkedSiteUrl" placeholder="https://mywebsite.com" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border-color);">
+                    </div>
+                    <div class="form-group">
+                        <label>Linked Site API Token</label>
+                        <input type="password" id="linkedSiteToken" placeholder="Linked site authentication token" style="width: 100%; padding: 10px 14px; border: 1px solid var(--border-color);">
+                    </div>
+                </div>
+            </div>
+
+
+                <style>
+                .block-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+                .block-mode-card {
+                    position: relative; display: flex; align-items: flex-start; gap: 16px;
+                    padding: 20px; border-radius: 12px; border: 2px solid var(--border-color);
+                    cursor: pointer; transition: all 0.25s ease; background: var(--card-bg, #1a1f2e);
+                }
+                .block-mode-card input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+                .block-mode-card:has(input:checked) {
+                    border-color: #6366f1;
+                    background: rgba(99, 102, 241, 0.08);
+                    box-shadow: 0 0 0 1px #6366f1, 0 4px 20px rgba(99,102,241,0.15);
+                }
+                .block-mode-card:hover:not(:has(input:checked)) { border-color: rgba(99,102,241,0.4); }
+                .block-mode-content { flex: 1; }
+                .block-mode-content h4 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+                .block-mode-content p { margin: 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
+                .mode-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+                .default-badge { background: rgba(99,102,241,0.15); color: #818cf8; }
+                @media (max-width: 640px) { .block-mode-grid { grid-template-columns: 1fr; } }
+                </style>
+            </div>
+
+
+            <div class="actions-bar"style="margin-top: 24px; justify-content: flex-end;">
+                <button type="button" class="btn btn-outline" id="btnCancel">Discard Changes</button>
+                <button type="button" class="btn btn-primary" id="btnSave">Save Configuration</button>
+            </div>
+            
+        </div>
+    </main>
+
+    <div class="toast" id="toastBox">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>Settings successfully updated.</span>
+    </div>
+
+    <script src="{{ url_for('static', path='/js/Dashboard/settings.js') }}"></script>
+</body>
+</html>
