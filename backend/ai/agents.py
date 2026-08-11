@@ -11,10 +11,13 @@ from backend.ai.agent_cache import agent_cache, NORMAL_TRAFFIC_TTL, ATTACK_ACTIV
 
 load_dotenv()
 
-TOKEN = os.getenv("HF_TOKEN", "").strip().strip('"\'')
+TOKEN = (os.getenv("HF_TOKEN") or "").strip().strip('"\'')
 
 CANDIDATE_MODELS = [
-    'meta-llama/Llama-3.3-70B-Instruct'
+    'meta-llama/Llama-3.3-70B-Instruct',
+    'Qwen/Qwen2.5-Coder-32B-Instruct',
+    'Qwen/Qwen2.5-72B-Instruct',
+    'mistralai/Mistral-7B-Instruct-v0.3'
 ]
 
 # Background retraining lock - prevent concurrent retraining
